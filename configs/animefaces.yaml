@@ -1,6 +1,6 @@
 expname: anime_faces
 data:
-  datadir: /content/drive/MyDrive/anime_faces/archive.zip
+  datadir: data/anime
   type: anime
   imsize: 64
   white_bkgd: True
