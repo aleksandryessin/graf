@@ -1,6 +1,6 @@
 expname: anime
 data:
-  datadir: data/anime
+  datadir: /content/archive.zip
   type: anime
   imsize: 64
   white_bkgd: True
