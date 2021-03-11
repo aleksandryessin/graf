@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from ...submodules.nerf_pytorch.coord_conv import CoordConv 
+from submodules.nerf_pytorch.coord_conv import CoordConv 
 
 class Discriminator(nn.Module):
     def __init__(self, nc=3, ndf=64, imsize=64, hflip=False):

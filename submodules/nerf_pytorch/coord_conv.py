@@ -41,9 +41,9 @@ class CoordConv(nn.Module):
         if with_r:
             in_size += 1
         self.conv = nn.Conv2d(in_size, out_channels, **kwargs)
+        self.weight = self.conv.weight
 
     def forward(self, x):
         ret = self.addcoords(x)
         ret = self.conv(ret)
         return ret
-        

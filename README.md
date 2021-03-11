@@ -4,8 +4,9 @@
 <img src="animations/carla_256.gif" width="512"/><br>
 </div>
 
-This repository contains official code for the paper
-[GRAF: Generative Radiance Fields for 3D-Aware Image Synthesis](https://avg.is.tuebingen.mpg.de/publications/schwarz2020neurips).
+This repository contains the mixture of the official code for the paper
+[GRAF: Generative Radiance Fields for 3D-Aware Image Synthesis](https://avg.is.tuebingen.mpg.de/publications/schwarz2020neurips)
+with ideas from [pi-GAN: Periodic Implicit Generative Adversarial Networks for 3D-AwareImage Synthesis](https://arxiv.org/abs/2012.00926)
 
 You can find detailed usage instructions for training your own models and using pre-trained models below.
 
@@ -172,3 +173,12 @@ This repository uses Lars Mescheder's awesome framework for [GAN training](https
 ### NeRF
 
 We base our code for the Generator on this great [Pytorch reimplementation](https://github.com/yenchenlin/nerf-pytorch) of Neural Radiance Fields.
+
+### Some hints
+
+If you suffer from lack of memory set batch size as small as possible - like 1 in `configs/default.yml`.
+
+### Running on `colab`
+
+there is a demo `pi_graf_demo.ipynb` in order to get started
+
