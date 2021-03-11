@@ -1,7 +1,7 @@
-expname: default
+expname: anime
 data:
-  datadir: data/carla
-  type: carla
+  datadir: data/anime
+  type: anime
   imsize: 64
   white_bkgd: True
   near: 1.
