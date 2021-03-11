@@ -104,9 +104,9 @@ class NeRF(nn.Module):
                     initializer=initializer
                 )
             ] + [
-                SineLayer(
-                    in_features=W, 
-                    out_features=W if i not in self.skips else W + input_ch, 
+               SineLayer(
+                    in_features=W if i not in self.skips else W + input_ch, 
+                    out_features=W, 
                     w0=w0_hidden, 
                     is_first=False,
                     initializer=initializer
@@ -118,7 +118,7 @@ class NeRF(nn.Module):
         self.views_sines = nn.ModuleList(
             [
                 SineLayer(
-                    in_features=input_ch_views + W, 
+                    in_features=(input_ch_views + W), 
                     out_features=W//2,
                     w0=w0_hidden
                 )
