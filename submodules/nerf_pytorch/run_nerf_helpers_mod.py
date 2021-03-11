@@ -8,6 +8,7 @@ from functools import partial
 # TODO: remove this dependency
 from torchsearchsorted import searchsorted
 
+from .siren import SineLayer
 
 # Misc
 img2mse = lambda x, y : torch.mean((x - y) ** 2)
@@ -70,7 +71,19 @@ def get_embedder(multires, i=0):
 
 # Model
 class NeRF(nn.Module):
-    def __init__(self, D=8, W=256, input_ch=3, input_ch_views=3, output_ch=4, skips=[4], use_viewdirs=False):
+    def __init__(
+        self, 
+        D=8, 
+        W=256, 
+        input_ch=3, 
+        input_ch_views=3, 
+        output_ch=4, 
+        skips=[4], 
+        w0_hidden = 1.0, 
+        w0_initial = 30.0,
+        initializer = "uniform",
+        use_viewdirs=False
+    ):
         """ 
         """
         super(NeRF, self).__init__()
@@ -81,15 +94,38 @@ class NeRF(nn.Module):
         self.skips = skips
         self.use_viewdirs = use_viewdirs
         
-        self.pts_linears = nn.ModuleList(
-            [nn.Linear(input_ch, W)] + [nn.Linear(W, W) if i not in self.skips else nn.Linear(W + input_ch, W) for i in range(D-1)])
+        self.sine_layers = nn.ModuleList(
+            [
+                SineLayer(
+                    in_features=input_ch, 
+                    out_features=W, 
+                    w0=w0_initial, 
+                    is_first=True,
+                    initializer=initializer
+                )
+            ] + [
+                SineLayer(
+                    in_features=W, 
+                    out_features=W if i not in self.skips else W + input_ch, 
+                    w0=w0_hidden, 
+                    is_first=False,
+                    initializer=initializer
+                ) for i in range(D-1)
+            ]
+        )
         
         ### Implementation according to the official code release (https://github.com/bmild/nerf/blob/master/run_nerf_helpers.py#L104-L105)
-        self.views_linears = nn.ModuleList([nn.Linear(input_ch_views + W, W//2)])
+        self.views_sines = nn.ModuleList(
+            [
+                SineLayer(
+                    in_features=input_ch_views + W, 
+                    out_features=W//2,
+                    w0=w0_hidden
+                )
+            ]
+        )
 
         ### Implementation according to the paper
-        # self.views_linears = nn.ModuleList(
-        #     [nn.Linear(input_ch_views + W, W//2)] + [nn.Linear(W//2, W//2) for i in range(D//2)])
         
         if use_viewdirs:
             self.feature_linear = nn.Linear(W, W)
@@ -98,12 +134,11 @@ class NeRF(nn.Module):
         else:
             self.output_linear = nn.Linear(W, output_ch)
 
-    def forward(self, x):
+    def forward(self, x, gamma=None, beta=None):
         input_pts, input_views = torch.split(x, [self.input_ch, self.input_ch_views], dim=-1)
         h = input_pts
-        for i, l in enumerate(self.pts_linears):
-            h = self.pts_linears[i](h)
-            h = relu(h)
+        for i, l in enumerate(self.sine_layers):
+            h = self.sine_layers[i](h, gamma, beta)
             if i in self.skips:
                 h = torch.cat([input_pts, h], -1)
 
@@ -112,9 +147,8 @@ class NeRF(nn.Module):
             feature = self.feature_linear(h)
             h = torch.cat([feature, input_views], -1)
         
-            for i, l in enumerate(self.views_linears):
-                h = self.views_linears[i](h)
-                h = relu(h)
+            for i, l in enumerate(self.views_sines):
+                h = self.views_sines[i](h)
 
             rgb = self.rgb_linear(h)
             outputs = torch.cat([rgb, alpha], -1)
@@ -126,11 +160,11 @@ class NeRF(nn.Module):
     def load_weights_from_keras(self, weights):
         assert self.use_viewdirs, "Not implemented if use_viewdirs=False"
         
-        # Load pts_linears
+        # Load sine_layers
         for i in range(self.D):
-            idx_pts_linears = 2 * i
-            self.pts_linears[i].weight.data = torch.from_numpy(np.transpose(weights[idx_pts_linears]))    
-            self.pts_linears[i].bias.data = torch.from_numpy(np.transpose(weights[idx_pts_linears+1]))
+            idx_sine_layers = 2 * i
+            self.sine_layers[i].weight.data = torch.from_numpy(np.transpose(weights[idx_sine_layers]))    
+            self.sine_layers[i].bias.data = torch.from_numpy(np.transpose(weights[idx_sine_layers+1]))
         
         # Load feature_linear
         idx_feature_linear = 2 * self.D
@@ -151,7 +185,6 @@ class NeRF(nn.Module):
         idx_alpha_linear = 2 * self.D + 6
         self.alpha_linear.weight.data = torch.from_numpy(np.transpose(weights[idx_alpha_linear]))
         self.alpha_linear.bias.data = torch.from_numpy(np.transpose(weights[idx_alpha_linear+1]))
-
 
 
 # Ray helpers
