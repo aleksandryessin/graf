@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('config', type=str, help='Path to config file.')
 
     args, unknown = parser.parse_known_args() 
-    config = load_config(args.config, 'configs/default.yaml')
+    config = load_config(args.config, 'configs/animefaces.yaml')
     config['data']['fov'] = float(config['data']['fov'])
     config = update_config(config, unknown)
 
